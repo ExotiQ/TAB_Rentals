@@ -1,45 +1,31 @@
 <?php
 /*
-Plugin Name: TAB Leihequipment
-Plugin URI: none
-Description: Fügt Leihequipment hinzu
+Plugin Name: tab Leihausrüstung
+Description: Custom Post Rentals
 Version: 0.1
 Author: Flo Gesell
 Author URI: https://flogesell.de
 */
 
 // Call an instance from our class
-$plugin_start = new TABRentals();
+$plugin_start = new tabRentals();
 
-class TABRentals {
+class tabRentals {
 
-	/*
-	 * Constructor - the brain of our class
-	 * */
 	public function __construct() {
-
         // registriert den neuen custom post type
-        add_action( 'init', array( $this, 'TAB_rentals' ) );
+        add_action( 'init', array( $this, 'tab_rentals' ) );
 
-        add_action( 'init', array( $this, 'create_rentals_taxonomy' ) );
+        add_action( 'init', array( $this, 'tab_create_the_rental_taxonomy' ) );
 
         // Shortcode für die Ausgabe aller Mitarbeiter
         add_shortcode( 'alle-projekte', array( $this, 'rentals_shortcode' ) );
 
-        // Custom Single Page Design for rentals
+        // Custom Single Page Design for Rentals
         add_filter('single_template', array( $this, 'custom_post_type_single_mapping' ));
-
-        wp_register_style('TABLeihequipment_dashicons', plugins_url( TABLeihequipment.'/css/TABLeihequipment.css'));
-        wp_enqueue_style('TABLeihequipment_dashicons');
-
 	}
 
-    // https://wordpress.stackexchange.com/questions/35165/how-do-i-create-a-custom-role-capability
-
-
-    // Add the new capability to all roles having a certain built-in capability
-    
-    public function TAB_rentals()  {
+    public function tab_rentals()  {
 
         $labels = array(
             'name'               => _x( 'Leihequipment', 'post type general name' ),
@@ -48,7 +34,7 @@ class TABRentals {
             'add_new_item'       => __( 'Neues Leihequipment anlegen' ),
             'edit_item'          => __( 'Leihequipment bearbeiten' ),
             'new_item'           => __( 'Neues Leihequipment' ),
-            'all_items'          => __( 'Das Ganze Leihequipment' ),
+            'all_items'          => __( 'Alle Leihsachen' ),
             'view_item'          => __( 'Leihequipment ansehen' ),
             'search_items'       => __( 'Leihequipment durchsuchen' ),
             'not_found'          => __( 'Kein Leihequipment gefunden' ),
@@ -66,7 +52,7 @@ class TABRentals {
                    // Soll es im Backend Menu sichtbar sein?
                    'show_in_menu'        => true,
                    // Menu Icon
-                   'menu_icon' => 'dashicons-pistol',
+                   'menu_icon' => 'dashicons-tag',
                    // Position im Menu
                    'menu_position'       => 5,
                    // Post Type in der oberen Admin-Bar anzeigen?
@@ -85,7 +71,7 @@ class TABRentals {
                    'exclude_from_search' => false,
         
                    // Welche Elemente sollen in der Backend-Detailansicht vorhanden sein?
-                   'supports'            => array( 'title', 'editor', 'thumbnail', 'custom-fields', 'revisions' ),
+                   'supports'            => array( 'title', 'editor','author', 'thumbnail', 'custom-fields', 'revisions' ),
         
                    // Soll der Post Type Archiv-Seiten haben?
                    'has_archive'         => false,
@@ -100,39 +86,23 @@ class TABRentals {
                    'show_in_rest'        => true,
         );
 
-        register_post_type( 'TAB_rentals', $args );
+        register_post_type( 'tab_rentals', $args );
         
     }
 
-    function create_rentals_taxonomy() {
- 
-         
-          $labels = array(
-            'name' => _x( 'Leihequipmentkategorien', 'taxonomy general name' ),
-            'singular_name' => _x( 'Leihequipmentkategorie', 'taxonomy singular name' ),
-            'search_items' =>  __( 'Durchsuche Leihequipmentkategorien' ),
-            'all_items' => __( 'Alle Leihequipmentkategorien' ),
-            'parent_item' => __( 'Übergeordnete Leihequipmentkategorie' ),
-            'parent_item_colon' => __( 'Übergeordnete Leihequipmentkategorie:' ),
-            'edit_item' => __( 'Bearbeite Leihequipmentkategorie' ), 
-            'update_item' => __( 'Überschreibe Leihequipmentkategorien' ),
-            'add_new_item' => __( 'Füge eine neue Leihequipmentkategorie hinzu' ),
-            'new_item_name' => __( 'Neuer Leihequipmentkategoriename' ),
-            'menu_name' => __( 'Leihequipmentkategorien' ),
-          );    
-         
-        // Now register the taxonomy
-          register_taxonomy('rentals', array('TAB_rentals'), array(
-            'hierarchical' => true,
-            'labels' => $labels,
-            'show_ui' => true,
-            'show_in_rest' => true,
-            'show_admin_column' => true,
-            'query_var' => true,
-            'rewrite' => array( 'slug' => 'rentals' ),
-          ));
-         
-    }
+    public function tab_create_the_rental_taxonomy() {  
+        register_taxonomy(  
+            'rental-category',  					// This is a name of the taxonomy. Make sure it's not a capital letter and no space in between
+            'tab_rentals',        			
+            array(  
+                'hierarchical' => true,  
+                'label' => 'Leihkategorie',  	
+                'query_var' => true,
+                'has_archive' => true,
+                'rewrite' => array('slug' => 'rental-category')
+            )  
+        );  
+    }  
 
     public function rentals_shortcode() {
 
@@ -140,7 +110,7 @@ class TABRentals {
 
         // Loop Argumente
         $args = array(
-            'post_type'         => 'TAB_rentals',
+            'post_type'         => 'tab_rentals',
             'post_status'       => array( 'publish' ),
             'posts_per_page'    => -1
         );
@@ -181,7 +151,7 @@ class TABRentals {
         global $post;
 
         /* Checks for single template by post type */
-        if ( $post->post_type == 'TAB_rentals' ) {
+        if ( $post->post_type == 'tab_rentals' ) {
             if ( file_exists( plugin_dir_path( __FILE__ ) . '/rentals_single.php' ) ) {
                 return plugin_dir_path( __FILE__ ) . '/rentals_single.php';
             }
@@ -192,3 +162,4 @@ class TABRentals {
 
 
 }
+?>
